@@ -3,101 +3,132 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>25计科2班留言星空</title>
-<form name="messageBoard" netlify hidden>
-  <input type="hidden" name="username">
-  <input type="hidden" name="content">
-  <input type="hidden" name="time">
-</form>
+<title>25计科2班星空留言板</title>
 <style>
-*{margin: 0;padding: 0;box-sizing: border-box;}
-body {
-  background: linear-gradient(#000000,#101020,#000000);
-  color: #fff;
-  min-height: 100vh;
-  padding: 20px;
-  font-family: "SimSun","宋体",serif;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+background:#000000;
+min-height:100vh;
+overflow:hidden;
+position:relative;
 }
-.container{max-width:800px;margin:0 auto;}
-.send-box{background:rgba(30,30,60,0.4);padding:20px;border-radius:10px;margin-bottom:40px;}
-input,textarea{
-  width:100%;
-  background:rgba(0,0,0,0.5);
-  border:1px solid #5577bb;
-  color:#fff;
-  padding:10px;
-  margin:8px 0;
-  border-radius:4px;
+.bg-title{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+font-size:72px;
+font-family:"KaiTi","楷体","SimKai","STKaiti",serif;
+color:#ffffff;
+letter-spacing:8px;
+white-space:nowrap;
+user-select:none;
+z-index:0;
+opacity:0.12;
+}
+.form-box{
+position:relative;
+z-index:10;
+max-width:750px;
+margin:30px auto 0;
+padding:0 15px;
+}
+textarea{
+width:100%;
+background:#050505;
+border:1px solid #3366ff;
+color:#fff;
+padding:12px;
+margin:10px 0;
+border-radius:6px;
+font-size:16px;
 }
 button{
-  padding:10px 26px;
-  background:#4488ff;
-  border:none;
-  color:#fff;
-  border-radius:4px;
-  cursor:pointer;
+padding:12px 30px;
+background:#2266ff;
+border:none;
+color:#fff;
+border-radius:5px;
+font-size:16px;
+cursor:pointer;
 }
 .msg-item{
-  background:rgba(20,20,50,0.35);
-  padding:16px;
-  border-radius:8px;
-  margin:12px 0;
+position:absolute;
+font-size:17px;
+color:#fff970;
+text-shadow:0 0 6px #ffdd22,0 0 12px #ffcc00;
+white-space:nowrap;
+z-index:5;
 }
-.name{color:#88ccff;font-size:16px}
-.time{color:#aaa;font-size:12px;margin-top:4px}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="send-box">
-    <input id="nameInput" placeholder="你的姓名">
-    <textarea id="textInput" rows="4" placeholder="写下班级留言"></textarea>
-    <button onclick="submitMsg()">提交留言</button>
-  </div>
-  <div id="msgList"></div>
+<div class="bg-title">25计科2班</div>
+<div class="form-box">
+<form name="starMsg" netlify onsubmit="handleSubmit(event)">
+<textarea name="text" rows="3" placeholder="写下留言" required></textarea>
+<button type="submit">发送星光留言</button>
+</form>
 </div>
 <script>
-function submitMsg(){
-  const name = document.getElementById("nameInput").value.trim();
-  const text = document.getElementById("textInput").value.trim();
-  if(!name || !text){
-    alert("姓名和留言不能为空！");
-    return;
-  }
-  const time = new Date().toLocaleString();
-  let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
-  allMsg.unshift({name,text,time});
-  localStorage.setItem("classMsg",JSON.stringify(allMsg));
-  fetch("/",{
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:new URLSearchParams({
-      "form-name":"messageBoard",
-      username:name,
-      content:text,
-      time:time
-    })
-  }).then(()=>{
-    alert("留言发布成功，刷新页面查看全部！");
-    document.getElementById("nameInput").value="";
-    document.getElementById("textInput").value="";
-    loadMsg();
-  })
+let msgList = JSON.parse(localStorage.getItem("starMsgData"))||[];
+let msgDom = [];
+const speedX = 1.2;
+const speedY = 0.8;
+function createMoveDom(text){
+let div = document.createElement("div");
+div.className = "msg-item";
+div.innerText = text;
+document.body.appendChild(div);
+let w = div.offsetWidth;
+let h = div.offsetHeight;
+let x = Math.random()*(window.innerWidth - w);
+let y = Math.random()*(window.innerHeight - h);
+let dx = speedX * (Math.random()>0.5?1:-1);
+let dy = speedY * (Math.random()>0.5?1:-1);
+msgDom.push({el:div,w,h,x,y,dx,dy});
 }
-function loadMsg(){
-  let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
-  let html = "";
-  allMsg.forEach(item=>{
-    html += `
-    <div class="msg-item">
-      <div class="name">${item.name}</div>
-      <div>${item.text}</div>
-      <div class="time">${item.time}</div>
-    </div>`
-  })
-  document.getElementById("msgList").innerHTML = html;
+function render(){
+msgDom.forEach(item=>item.el.remove());
+msgDom = [];
+msgList.forEach(item=>createMoveDom(item.text));
 }
-window.onload = loadMsg;
+function frame(){
+let winW = window.innerWidth;
+let winH = window.innerHeight;
+msgDom.forEach(item=>{
+item.x += item.dx;
+item.y += item.dy;
+if(item.x <=0 || item.x+item.w >= winW) item.dx *= -1;
+if(item.y <=0 || item.y+item.h >= winH) item.dy *= -1;
+item.el.style.left = item.x+"px";
+item.el.style.top = item.y+"px";
+})
+requestAnimationFrame(frame);
+}
+function handleSubmit(e){
+e.preventDefault();
+const form = e.target;
+const text = form.text.value.trim();
+msgList.unshift({text});
+localStorage.setItem("starMsgData",JSON.stringify(msgList));
+fetch("/",{
+method:"POST",
+headers:{"Content-Type":"application/x-www-form-urlencoded"},
+body:new URLSearchParams({
+"form-name":"starMsg",
+text:text
+})
+}).then(()=>{
+form.reset();
+render();
+alert("星光留言已送出！")
+})
+}
+window.onload = function(){
+render();
+frame();
+}
 </script>
 </body>
 </html>
