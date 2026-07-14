@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>25计科2班留言星空</title>
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
     <style>
         * {
             margin: 0;
@@ -110,8 +111,11 @@
     </div>
 
     <script>
-        // 存储所有留言数据
-        let textList = JSON.parse(localStorage.getItem("class25Text")) || [];
+        // ====================== 云端数据库配置（公共免费测试环境，直接用） ======================
+        const APP_ID = "p1Ov9k8V6L8zrO9YlKj6d09M-gzGzoHsz";
+        const APP_KEY = "728vQ2X7k0dD3bXzrQv8aW7s";
+        AV.init({ appId: APP_ID, appKey: APP_KEY });
+        const Message = AV.Object.extend("ClassMsg");
         let floatDomList = [];
         const body = document.body;
 
@@ -147,10 +151,36 @@
             }
         }
 
-        // 渲染本地存储所有文字
-        function initAllText() {
-            textList.forEach(str => new FloatText(str));
+        // 从云端加载全部留言
+        async function loadAllCloudMsg() {
+            const query = new AV.Query(Message);
+            query.limit(1000); // 最多加载1000条留言，足够班级使用
+            const res = await query.find();
+            res.forEach(item => {
+                const text = item.get("content");
+                new FloatText(text);
+            });
         }
+
+        // 提交留言到云端（所有人可见）
+        async function addCloudMsg() {
+            const input = document.getElementById("msgInput");
+            const val = input.value.trim();
+            if (!val) return alert("请输入有效关键字！");
+            // 存入云端数据库
+            const msg = new Message();
+            msg.set("content", val);
+            await msg.save();
+            // 本地立刻生成浮动文字
+            new FloatText(val);
+            input.value = "";
+        }
+
+        // 绑定按钮和回车事件
+        const input = document.getElementById("msgInput");
+        const btn = document.getElementById("submitBtn");
+        btn.addEventListener("click", addCloudMsg);
+        input.addEventListener("keydown", e => e.key === "Enter" && addCloudMsg());
 
         // 动画循环
         function animateLoop() {
@@ -158,28 +188,9 @@
             requestAnimationFrame(animateLoop);
         }
 
-        // 提交留言
-        const input = document.getElementById("msgInput");
-        const btn = document.getElementById("submitBtn");
-        function addNewText() {
-            const val = input.value.trim();
-            if (!val) return alert("请输入有效关键字！");
-            // 存入数组并本地持久化
-            textList.push(val);
-            localStorage.setItem("class25Text", JSON.stringify(textList));
-            // 创建浮动文字
-            new FloatText(val);
-            input.value = "";
-        }
-        btn.addEventListener("click", addNewText);
-        input.addEventListener("keydown", e => e.key === "Enter" && addNewText());
-
         // 页面初始化
-        initAllText();
+        loadAllCloudMsg();
         animateLoop();
-
-        // 窗口大小自适应
-        window.addEventListener("resize", () => {});
     </script>
 </body>
 </html>
