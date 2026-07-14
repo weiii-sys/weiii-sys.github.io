@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>25计科2班留言星空</title>
-<!-- Netlify表单识别必须加的隐藏标记 -->
 <form name="messageBoard" netlify hidden>
   <input type="hidden" name="username">
   <input type="hidden" name="content">
@@ -50,18 +49,14 @@ button{
 </head>
 <body>
 <div class="container">
-  <!-- 留言提交框 -->
   <div class="send-box">
     <input id="nameInput" placeholder="你的姓名">
     <textarea id="textInput" rows="4" placeholder="写下班级留言"></textarea>
     <button onclick="submitMsg()">提交留言</button>
   </div>
-  <!-- 所有同学留言展示区域 -->
   <div id="msgList"></div>
 </div>
-
 <script>
-// 本地缓存+同步表单提交
 function submitMsg(){
   const name = document.getElementById("nameInput").value.trim();
   const text = document.getElementById("textInput").value.trim();
@@ -70,11 +65,9 @@ function submitMsg(){
     return;
   }
   const time = new Date().toLocaleString();
-  // 1. 存入浏览器本地缓存（自己刷新页面也能看见）
   let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
   allMsg.unshift({name,text,time});
   localStorage.setItem("classMsg",JSON.stringify(allMsg));
-  // 2. 提交到Netlify云端，所有人共享
   fetch("/",{
     method:"POST",
     headers:{"Content-Type":"application/x-www-form-urlencoded"},
@@ -91,7 +84,6 @@ function submitMsg(){
     loadMsg();
   })
 }
-// 加载云端+本地全部留言
 function loadMsg(){
   let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
   let html = "";
