@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>25计科2班留言星空</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            /* 纯黑夜渐变背景 */
+            background: linear-gradient(#000008, #0a0a20, #000008);
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: "SimSun", "宋体", serif;
+        }
+        /* 顶部班级标题 */
+        .title-box {
+            position: fixed;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            z-index: 99;
+        }
+        .class-title {
+            font-family: "SimSun", "宋体", serif;
+            font-size: 48px;
+            color: #ffffff;
+            letter-spacing: 8px;
+        }
+        /* 底部输入区域 */
+        .input-area {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99;
+            display: flex;
+            gap: 12px;
+        }
+        #msgInput {
+            width: 320px;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-family: "SimSun", "宋体";
+        }
+        #msgInput::placeholder {
+            color: #cccccc;
+        }
+        #submitBtn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #ffcc00;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: "SimSun", "宋体";
+            font-size: 16px;
+        }
+        #submitBtn:hover {
+            background: #ffdd33;
+        }
+        /* 碰撞文字样式：黄色闪光 */
+        .float-text {
+            position: absolute;
+            white-space: nowrap;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 22px;
+            color: #ffdd00;
+            /* 闪光发光效果 */
+            text-shadow: 
+                0 0 6px #ffdd00,
+                0 0 12px #ffcc00,
+                0 0 20px #ffaa00,
+                0 0 30px #ff9900;
+            animation: flash 0.8s infinite alternate;
+        }
+        /* 闪烁动画 */
+        @keyframes flash {
+            0% {
+                opacity: 0.7;
+                text-shadow: 0 0 4px #ffdd00,0 0 8px #ffcc00;
+            }
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 10px #ffdd00,0 0 20px #ffcc00,0 0 35px #ffaa00;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部班级标题 -->
+    <div class="title-box">
+        <div class="class-title">25计科2班</div>
+    </div>
+
+    <!-- 输入框 -->
+    <div class="input-area">
+        <input type="text" id="msgInput" placeholder="输入你的专属留言，按下按钮添加星空文字">
+        <button id="submitBtn">添加闪光文字</button>
+    </div>
+
+    <script>
+        // 存储所有留言数据
+        let textList = JSON.parse(localStorage.getItem("class25Text")) || [];
+        let floatDomList = [];
+        const body = document.body;
+
+        // 文字浮动类
+        class FloatText {
+            constructor(text) {
+                this.text = text;
+                // 随机初始位置
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                // 随机速度
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                // 创建dom
+                this.dom = document.createElement("div");
+                this.dom.className = "float-text";
+                this.dom.innerText = this.text;
+                body.appendChild(this.dom);
+                floatDomList.push(this);
+            }
+            // 更新位置+碰撞反弹
+            update() {
+                const width = this.dom.offsetWidth;
+                const height = this.dom.offsetHeight;
+                // 边界碰撞
+                if (this.x <= 0 || this.x + width >= window.innerWidth) this.vx *= -1;
+                if (this.y <= 0 || this.y + height >= window.innerHeight) this.vy *= -1;
+                // 更新坐标
+                this.x += this.vx;
+                this.y += this.vy;
+                this.dom.style.left = this.x + "px";
+                this.dom.style.top = this.y + "px";
+            }
+        }
+
+        // 渲染本地存储所有文字
+        function initAllText() {
+            textList.forEach(str => new FloatText(str));
+        }
+
+        // 动画循环
+        function animateLoop() {
+            floatDomList.forEach(item => item.update());
+            requestAnimationFrame(animateLoop);
+        }
+
+        // 提交留言
+        const input = document.getElementById("msgInput");
+        const btn = document.getElementById("submitBtn");
+        function addNewText() {
+            const val = input.value.trim();
+            if (!val) return alert("请输入有效关键字！");
+            // 存入数组并本地持久化
+            textList.push(val);
+            localStorage.setItem("class25Text", JSON.stringify(textList));
+            // 创建浮动文字
+            new FloatText(val);
+            input.value = "";
+        }
+        btn.addEventListener("click", addNewText);
+        input.addEventListener("keydown", e => e.key === "Enter" && addNewText());
+
+        // 页面初始化
+        initAllText();
+        animateLoop();
+
+        // 窗口大小自适应
+        window.addEventListener("resize", () => {});
+    </script>
+</body>
+</html>
