@@ -1,188 +1,111 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>25计科2班留言星空</title>
-    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.0/dist/av-min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: linear-gradient(#000008, #0a0a20, #000008);
-            min-height: 100vh;
-            overflow: hidden;
-            font-family: "SimSun", "宋体", serif;
-        }
-        .title-box {
-            position: fixed;
-            top: 30px;
-            width: 100%;
-            text-align: center;
-            z-index: 99;
-        }
-        .class-title {
-            font-family: "SimSun", "宋体", serif;
-            font-size: 48px;
-            color: #ffffff;
-            letter-spacing: 8px;
-        }
-        .input-area {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 99;
-            display: flex;
-            gap: 12px;
-        }
-        #msgInput {
-            width: 320px;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            outline: none;
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            font-family: "SimSun", "宋体";
-        }
-        #msgInput::placeholder {
-            color: #cccccc;
-        }
-        #submitBtn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            background: #ffcc00;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: "SimSun", "宋体";
-            font-size: 16px;
-        }
-        #submitBtn:hover {
-            background: #ffdd33;
-        }
-        .float-text {
-            position: absolute;
-            white-space: nowrap;
-            font-family: "SimSun", "宋体", serif;
-            font-size: 22px;
-            color: #ffdd00;
-            text-shadow: 
-                0 0 6px #ffdd00,
-                0 0 12px #ffcc00,
-                0 0 20px #ffaa00,
-                0 0 30px #ff9900;
-            animation: flash 0.8s infinite alternate;
-        }
-        @keyframes flash {
-            0% {
-                opacity: 0.7;
-                text-shadow: 0 0 4px #ffdd00,0 0 8px #ffcc00;
-            }
-            100% {
-                opacity: 1;
-                text-shadow: 0 0 10px #ffdd00,0 0 20px #ffcc00,0 0 35px #ffaa00;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>25计科2班留言星空</title>
+<!-- Netlify表单识别必须加的隐藏标记 -->
+<form name="messageBoard" netlify hidden>
+  <input type="hidden" name="username">
+  <input type="hidden" name="content">
+  <input type="hidden" name="time">
+</form>
+<style>
+*{margin: 0;padding: 0;box-sizing: border-box;}
+body {
+  background: linear-gradient(#000000,#101020,#000000);
+  color: #fff;
+  min-height: 100vh;
+  padding: 20px;
+  font-family: "SimSun","宋体",serif;
+}
+.container{max-width:800px;margin:0 auto;}
+.send-box{background:rgba(30,30,60,0.4);padding:20px;border-radius:10px;margin-bottom:40px;}
+input,textarea{
+  width:100%;
+  background:rgba(0,0,0,0.5);
+  border:1px solid #5577bb;
+  color:#fff;
+  padding:10px;
+  margin:8px 0;
+  border-radius:4px;
+}
+button{
+  padding:10px 26px;
+  background:#4488ff;
+  border:none;
+  color:#fff;
+  border-radius:4px;
+  cursor:pointer;
+}
+.msg-item{
+  background:rgba(20,20,50,0.35);
+  padding:16px;
+  border-radius:8px;
+  margin:12px 0;
+}
+.name{color:#88ccff;font-size:16px}
+.time{color:#aaa;font-size:12px;margin-top:4px}
+</style>
 </head>
 <body>
-    <div class="title-box">
-        <div class="class-title">25计科2班</div>
-    </div>
+<div class="container">
+  <!-- 留言提交框 -->
+  <div class="send-box">
+    <input id="nameInput" placeholder="你的姓名">
+    <textarea id="textInput" rows="4" placeholder="写下班级留言"></textarea>
+    <button onclick="submitMsg()">提交留言</button>
+  </div>
+  <!-- 所有同学留言展示区域 -->
+  <div id="msgList"></div>
+</div>
 
-    <div class="input-area">
-        <input type="text" id="msgInput" placeholder="输入你的专属留言，按下按钮添加星空文字">
-        <button id="submitBtn">添加闪光文字</button>
-    </div>
-
-    <script>
-        const APP_ID = "p1Ov9k8V6L8zrO9YlKj6d09M-gzGzoHsz";
-        const APP_KEY = "728vQ2X7k0dD3bXzrQv8aW7s";
-        let floatDomList = [];
-        const body = document.body;
-        let AVReady = false;
-
-        window.addEventListener('load', async () => {
-            try {
-                AV.init({ appId: APP_ID, appKey: APP_KEY });
-                AVReady = true;
-                await loadAllCloudMsg();
-            } catch (err) {
-                alert("云端加载失败，刷新页面重试");
-                console.error(err);
-            }
-        });
-
-        const Message = AV.Object.extend("ClassMsg");
-
-        class FloatText {
-            constructor(text) {
-                this.text = text;
-                this.x = Math.random() * window.innerWidth;
-                this.y = Math.random() * window.innerHeight;
-                this.vx = (Math.random() - 0.5) * 3;
-                this.vy = (Math.random() - 0.5) * 3;
-                this.dom = document.createElement("div");
-                this.dom.className = "float-text";
-                this.dom.innerText = this.text;
-                body.appendChild(this.dom);
-                floatDomList.push(this);
-            }
-            update() {
-                const width = this.dom.offsetWidth;
-                const height = this.dom.offsetHeight;
-                if (this.x <= 0 || this.x + width >= window.innerWidth) this.vx *= -1;
-                if (this.y <= 0 || this.y + height >= window.innerHeight) this.vy *= -1;
-                this.x += this.vx;
-                this.y += this.vy;
-                this.dom.style.left = this.x + "px";
-                this.dom.style.top = this.y + "px";
-            }
-        }
-
-        async function loadAllCloudMsg() {
-            const query = new AV.Query(Message);
-            query.limit(1000);
-            const res = await query.find();
-            res.forEach(item => {
-                const text = item.get("content");
-                new FloatText(text);
-            });
-        }
-
-        async function addCloudMsg() {
-            const input = document.getElementById("msgInput");
-            const val = input.value.trim();
-            if (!val) return alert("请输入文字！");
-            if (!AVReady) return alert("加载中，请等几秒再提交");
-            try {
-                const msg = new Message();
-                msg.set("content", val);
-                await msg.save();
-                new FloatText(val);
-                input.value = "";
-            } catch (e) {
-                alert("提交失败，多刷新几次页面");
-            }
-        }
-
-        const input = document.getElementById("msgInput");
-        const btn = document.getElementById("submitBtn");
-        btn.addEventListener("click", addCloudMsg);
-        input.addEventListener("keydown", e => e.key === "Enter" && addCloudMsg());
-
-        function animateLoop() {
-            floatDomList.forEach(item => item.update());
-            requestAnimationFrame(animateLoop);
-        }
-        animateLoop();
-    </script>
+<script>
+// 本地缓存+同步表单提交
+function submitMsg(){
+  const name = document.getElementById("nameInput").value.trim();
+  const text = document.getElementById("textInput").value.trim();
+  if(!name || !text){
+    alert("姓名和留言不能为空！");
+    return;
+  }
+  const time = new Date().toLocaleString();
+  // 1. 存入浏览器本地缓存（自己刷新页面也能看见）
+  let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
+  allMsg.unshift({name,text,time});
+  localStorage.setItem("classMsg",JSON.stringify(allMsg));
+  // 2. 提交到Netlify云端，所有人共享
+  fetch("/",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:new URLSearchParams({
+      "form-name":"messageBoard",
+      username:name,
+      content:text,
+      time:time
+    })
+  }).then(()=>{
+    alert("留言发布成功，刷新页面查看全部！");
+    document.getElementById("nameInput").value="";
+    document.getElementById("textInput").value="";
+    loadMsg();
+  })
+}
+// 加载云端+本地全部留言
+function loadMsg(){
+  let allMsg = JSON.parse(localStorage.getItem("classMsg")) || [];
+  let html = "";
+  allMsg.forEach(item=>{
+    html += `
+    <div class="msg-item">
+      <div class="name">${item.name}</div>
+      <div>${item.text}</div>
+      <div class="time">${item.time}</div>
+    </div>`
+  })
+  document.getElementById("msgList").innerHTML = html;
+}
+window.onload = loadMsg;
+</script>
 </body>
 </html>
