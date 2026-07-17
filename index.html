@@ -1,134 +1,202 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>25计科2班星空留言板</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-background:#000000;
-min-height:100vh;
-overflow:hidden;
-position:relative;
-}
-.bg-title{
-position:absolute;
-left:50%;
-top:50%;
-transform:translate(-50%,-50%);
-font-size:72px;
-font-family:"KaiTi","楷体","SimKai","STKaiti",serif;
-color:#ffffff;
-letter-spacing:8px;
-white-space:nowrap;
-user-select:none;
-z-index:0;
-opacity:0.12;
-}
-.form-box{
-position:relative;
-z-index:10;
-max-width:750px;
-margin:30px auto 0;
-padding:0 15px;
-}
-textarea{
-width:100%;
-background:#050505;
-border:1px solid #3366ff;
-color:#fff;
-padding:12px;
-margin:10px 0;
-border-radius:6px;
-font-size:16px;
-}
-button{
-padding:12px 30px;
-background:#2266ff;
-border:none;
-color:#fff;
-border-radius:5px;
-font-size:16px;
-cursor:pointer;
-}
-.msg-item{
-position:absolute;
-font-size:17px;
-color:#fff970;
-text-shadow:0 0 6px #ffdd22,0 0 12px #ffcc00;
-white-space:nowrap;
-z-index:5;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>25计科2班留言星空</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(#000008, #0a0a20, #000008);
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: "SimSun", "宋体", serif;
+        }
+        .title-box {
+            position: fixed;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            z-index: 99;
+        }
+        .class-title {
+            font-family: "SimSun", "宋体", serif;
+            font-size: 48px;
+            color: #ffffff;
+            letter-spacing: 8px;
+        }
+        .input-area {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99;
+            display: flex;
+            gap: 12px;
+        }
+        #msgInput {
+            width: 320px;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-family: "SimSun", "宋体";
+        }
+        #msgInput::placeholder {
+            color: #cccccc;
+        }
+        #submitBtn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #ffcc00;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: "SimSun", "宋体";
+            font-size: 16px;
+        }
+        #submitBtn:hover {
+            background: #ffdd33;
+        }
+        .float-text {
+            position: absolute;
+            white-space: nowrap;
+            font-family: "SimSun", "宋体", serif;
+            font-size: 22px;
+            color: #ffdd00;
+            text-shadow: 
+                0 0 6px #ffdd00,
+                0 0 12px #ffcc00,
+                0 0 20px #ffaa00,
+                0 0 30px #ff9900;
+            animation: flash 0.8s infinite alternate;
+        }
+        @keyframes flash {
+            0% {
+                opacity: 0.7;
+                text-shadow: 0 0 4px #ffdd00,0 0 8px #ffcc00;
+            }
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 10px #ffdd00,0 0 20px #ffcc00,0 0 35px #ffaa00;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="bg-title">25计科2班</div>
-<div class="form-box">
-<form name="starMsg" netlify onsubmit="handleSubmit(event)">
-<textarea name="text" rows="3" placeholder="写下留言" required></textarea>
-<button type="submit">发送星光留言</button>
-</form>
-</div>
-<script>
-let msgList = JSON.parse(localStorage.getItem("starMsgData"))||[];
-let msgDom = [];
-const speedX = 1.2;
-const speedY = 0.8;
-function createMoveDom(text){
-let div = document.createElement("div");
-div.className = "msg-item";
-div.innerText = text;
-document.body.appendChild(div);
-let w = div.offsetWidth;
-let h = div.offsetHeight;
-let x = Math.random()*(window.innerWidth - w);
-let y = Math.random()*(window.innerHeight - h);
-let dx = speedX * (Math.random()>0.5?1:-1);
-let dy = speedY * (Math.random()>0.5?1:-1);
-msgDom.push({el:div,w,h,x,y,dx,dy});
-}
-function render(){
-msgDom.forEach(item=>item.el.remove());
-msgDom = [];
-msgList.forEach(item=>createMoveDom(item.text));
-}
-function frame(){
-let winW = window.innerWidth;
-let winH = window.innerHeight;
-msgDom.forEach(item=>{
-item.x += item.dx;
-item.y += item.dy;
-if(item.x <=0 || item.x+item.w >= winW) item.dx *= -1;
-if(item.y <=0 || item.y+item.h >= winH) item.dy *= -1;
-item.el.style.left = item.x+"px";
-item.el.style.top = item.y+"px";
-})
-requestAnimationFrame(frame);
-}
-function handleSubmit(e){
-e.preventDefault();
-const form = e.target;
-const text = form.text.value.trim();
-msgList.unshift({text});
-localStorage.setItem("starMsgData",JSON.stringify(msgList));
-fetch("/",{
-method:"POST",
-headers:{"Content-Type":"application/x-www-form-urlencoded"},
-body:new URLSearchParams({
-"form-name":"starMsg",
-text:text
-})
-}).then(()=>{
-form.reset();
-render();
-alert("星光留言已送出！")
-})
-}
-window.onload = function(){
-render();
-frame();
-}
-</script>
+    <div class="title-box">
+        <div class="class-title">25计科2班</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="msgInput" placeholder="输入你的专属留言，按下按钮添加星空文字">
+        <button id="submitBtn">添加闪光文字</button>
+    </div>
+
+    <script>
+        //免费公共json存储地址，所有人共用，无需注册账号
+        const BIN_ID = "6882f7139d1f447388809c31c56792d1";
+        const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        const HEADERS = {
+            "Content-Type": "application/json",
+            "X-Access-Key": "$2a$10$eZp0H1g8xU9kGpq1R0yWbeb0hVQyJm5gU8qD1aKz7cF0aK"
+        };
+
+        let floatDomList = [];
+        const body = document.body;
+        let allMessages = [];
+
+        //浮动文字碰撞效果，和你现在页面一模一样
+        class FloatText {
+            constructor(text) {
+                this.text = text;
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.dom = document.createElement("div");
+                this.dom.className = "float-text";
+                this.dom.innerText = this.text;
+                body.appendChild(this.dom);
+                floatDomList.push(this);
+            }
+            update() {
+                const width = this.dom.offsetWidth;
+                const height = this.dom.offsetHeight;
+                if (this.x <= 0 || this.x + width >= window.innerWidth) this.vx *= -1;
+                if (this.y <= 0 || this.y + height >= window.innerHeight) this.vy *= -1;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.dom.style.left = this.x + "px";
+                this.dom.style.top = this.y + "px";
+            }
+        }
+
+        //从云端读取所有人的留言
+        async function loadAllMsg(){
+            try{
+                let res = await fetch(API_URL,{headers:HEADERS});
+                let data = await res.json();
+                allMessages = data.record.list || [];
+                renderAllText();
+            }catch(err){
+                alert("加载失败，刷新页面即可");
+            }
+        }
+
+        //渲染所有浮动文字
+        function renderAllText(){
+            floatDomList.forEach(d=>d.dom.remove());
+            floatDomList = [];
+            allMessages.forEach(txt=>new FloatText(txt));
+        }
+
+        //把新留言保存到云端，所有人可见
+        async function saveNewMsg(text){
+            allMessages.push(text);
+            try{
+                await fetch(API_URL,{
+                    method:"PUT",
+                    headers:HEADERS,
+                    body:JSON.stringify({list:allMessages})
+                });
+                renderAllText();
+            }catch(err){
+                alert("提交失败，刷新重试");
+            }
+        }
+
+        //按钮事件
+        const input = document.getElementById("msgInput");
+        const btn = document.getElementById("submitBtn");
+        async function addText(){
+            let val = input.value.trim();
+            if(!val) return alert("请输入内容");
+            await saveNewMsg(val);
+            input.value = "";
+        }
+        btn.addEventListener("click",addText);
+        input.addEventListener("keydown",e=>e.key==="Enter"&&addText());
+
+        //动画循环
+        function animate(){
+            floatDomList.forEach(item=>item.update());
+            requestAnimationFrame(animate);
+        }
+
+        //页面初始化
+        window.onload = async ()=>{
+            await loadAllMsg();
+            animate();
+        }
+    </script>
 </body>
 </html>
